@@ -119,8 +119,7 @@ bit_7_model = 0
 bit_6_model = 0
 bit_5_model = 0
 bit_4_model = 0
-mixed_bit_model1 =0
-single_layer_quantization_model1 =0
+single_layer_quantization_model1 = 1
 eval_only_4_model1 = 0
 post_quant_training_mixed_model = 0
 model_bits_file = f'quantization_functions/model_layers.json'
@@ -291,47 +290,45 @@ if bit_4_model == 1:
 if single_layer_quantization_model1==1:
     # %%
     # Convert base model to a custom quantization layer with the trained weights
-    parser = argparse.ArgumentParser(description='quantization sensitivity')
-    parser.add_argument("-l", "--layer",
-                        type=int,
-                        default="0",
-                        help='name of example from example.py')
-    args = parser.parse_args()
-    four_bit_layer =args.layer
+    #parser = argparse.ArgumentParser(description='quantization sensitivity')
+    #parser.add_argument("-l", "--layer",
+    #                    type=int,
+    #                    default="0",
+    #                    help='name of example from example.py')
+    #args = parser.parse_args()
+    #four_bit_layer =args.layer
 
     for layer_no, layer_name in enumerate (model_bits.keys()):
-        if layer_no==four_bit_layer:
-            model_bits[layer_name]=4
-    c_base_model = quant_aware_resnet_model.CResnet18(num_class=10, q_num_bit=model_bits, qat=False,
-                                                    pretrained=f'{SAVE_DIR}/base_model/model_weights.pt')
-    c_base_model.quantize(True)
+        #if layer_no==four_bit_layer:
+        model_bits[layer_name]=4
+        print(layer_name)
+        c_base_model = quant_aware_resnet_model.CResnet18(num_class=10, q_num_bit=model_bits, qat=False, pretrained=f'{SAVE_DIR}/base_model/model_weights.pt')
+        c_base_model.quantize(True)
+    	# print("c_base_model quantized")
+    	# print(c_base_model)
+    	# Forward pass to have quantized weights
+    	# print("testing loaded quantized resnet model")
+    	train_loop.test_model(train_loader, c_base_model)
+    	# %%
+    	# Convert to quantized model
+    	q_base_model = post_training_quant_model.QResnet18(num_class=10)
+    	q_base_model.convert_from(c_base_model)
 
-    # print("c_base_model quantized")
-    # print(c_base_model)
-    # Forward pass to have quantized weights
-    # print("testing loaded quantized resnet model")
-    train_loop.test_model(train_loader, c_base_model)
+    	# %%
+    	# Validation accuracy
+    	train_loop.test_model(test_loader, q_base_model)
 
-    # %%
-    # Convert to quantized model
-    q_base_model = post_training_quant_model.QResnet18(num_class=10)
-    q_base_model.convert_from(c_base_model)
-
-    # %%
-    # Validation accuracy
-    train_loop.test_model(test_loader, q_base_model)
-
-    # print("loading weights from 8-bit quantized model")
-    # model_weights = torch.load(
-    #     f'{SAVE_DIR}/qat8bit/model_weights_quantized.pt', map_location='cpu')
-    # q_base_model.load_state_dict(model_weights)
-    # q_base_model.eval()
-    # train_loop.test_model(test_loader, q_base_model)
-    # for k, v in q_base_model.state_dict().items():
-    #     print(k, v)
-    # %%
-    with open(f'{SAVE_DIR}/ptq4bit_model_weights.pt', 'wb') as f:
-        torch.save(q_base_model.state_dict(), f)
+    	# print("loading weights from 8-bit quantized model")
+    	# model_weights = torch.load(
+    	#     f'{SAVE_DIR}/qat8bit/model_weights_quantized.pt', map_location='cpu')
+    	# q_base_model.load_state_dict(model_weights)
+    	# q_base_model.eval()
+    	# train_loop.test_model(test_loader, q_base_model)
+    	# for k, v in q_base_model.state_dict().items():
+    	#     print(k, v)
+    	# %%
+    	#with open(f'{SAVE_DIR}/ptq4bit_model_weights.pt', 'wb') as f:
+    	#    torch.save(q_base_model.state_dict(), f)
 
 if eval_only_4_model1 == 1:
     # %% [markdown]
@@ -406,4 +403,3 @@ if post_quant_training_mixed_model ==1:
     # %%
     with open(f'{SAVE_DIR}/qat4bit_modified/model_weights_quantized.pt', 'wb') as f:
         torch.save(q_base_model.state_dict(), f)
-
