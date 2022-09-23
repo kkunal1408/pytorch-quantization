@@ -326,7 +326,9 @@ if single_layer_quantization_model1 == 1:
         # %%
         # Validation accuracy
         train_loop.test_model(test_loader, q_base_model)
-
+        del c_base_model
+        del q_base_model
+        torch.cuda.empty_cache()
         # print("loading weights from 8-bit quantized model")
         # model_weights = torch.load(
         #     f'{SAVE_DIR}/qat8bit/model_weights_quantized.pt', map_location='cpu')
