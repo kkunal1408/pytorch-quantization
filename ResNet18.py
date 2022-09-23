@@ -103,16 +103,25 @@ base_model.fc = nn.Linear(base_model.fc.in_features, N_CLASS) # Change top layer
 # ## Train Loop
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD(base_model.parameters(), 1e-2, momentum=0.9, weight_decay=1e-5)
+train_loop.train_model(
+    train_dl=train_loader,
+    val_dl=test_loader,
+    model=base_model,
+    optimizer=optimizer,
+    criterion=criterion,
+    clip_value=1e-2,
+    epochs=N_EPOCH, save=f"{SAVE_DIR}/base_model"
+)
 
 base_model = 0
-bit_8_model = 0
+bit_8_model = 1
 bit_7_model = 0
 bit_6_model = 0
 bit_5_model = 0
 bit_4_model = 0
 mixed_bit_model1 =0
 single_layer_quantization_model1 =0
-eval_only_4_model1 = 1
+eval_only_4_model1 = 0
 post_quant_training_mixed_model = 0
 model_bits_file = f'quantization_functions/model_layers.json'
 num_bit = 4
@@ -120,15 +129,6 @@ model_bits = json.load(open(model_bits_file, 'r'))
 model_bits = model_bits['ResNet18_8_bit']
 
 if base_model==1:
-    train_loop.train_model(
-        train_dl=train_loader,
-        val_dl=test_loader,
-        model=base_model,
-        optimizer=optimizer,
-        criterion=criterion,
-        clip_value=1e-2,
-        epochs=N_EPOCH, save=f"{SAVE_DIR}/base_model"
-    )
 
     # %%
     base_model = torchvision.models.resnet18(pretrained=False)
@@ -138,9 +138,6 @@ if base_model==1:
 
     # Validation accuracy
     train_loop.test_model(test_loader, base_model)
-
-    print("c_base_model")
-    print(base_model)
     model_weights_base = torch.load(
         f'{SAVE_DIR}/base_model/model_weights.pt', map_location='cpu')
     print(f'{SAVE_DIR}/base_model/model_weights.pt resnet base model weights')
@@ -159,7 +156,6 @@ if bit_8_model ==1:
                                                     pretrained=f'{SAVE_DIR}/base_model/model_weights.pt')
     c_base_model.quantize(True)
 
-    # %%
     # Forward pass to have quantized weights
     print("testing loaded quantized resnet model")
     train_loop.test_model(train_loader, c_base_model)
@@ -343,7 +339,8 @@ if eval_only_4_model1 == 1:
 
     # %%
     # Create model with custom quantization layer from the start
-    c_base_model = quant_aware_resnet_model.CResnet18(num_class=10, q_num_bit=4, qat=True, pretrained=True)
+    print(model_bits)
+    c_base_model = quant_aware_resnet_model.CResnet18(num_class=10, q_num_bit=8, qat=True, pretrained=True)
     c_base_model.quantize(True)
 
     # %%
@@ -371,8 +368,8 @@ if eval_only_4_model1 == 1:
     train_loop.test_model(test_loader, q_base_model)
 
     # %%
-    with open(f'{SAVE_DIR}/qat4bit/model_weights_quantized.pt', 'wb') as f:
-        torch.save(q_base_model.state_dict(), f)
+    # with open(f'{SAVE_DIR}/qat4bit/model_weights_quantized.pt', 'wb') as f:
+    #     torch.save(q_base_model.state_dict(), f)
 
 
 # # %% [markdown]
