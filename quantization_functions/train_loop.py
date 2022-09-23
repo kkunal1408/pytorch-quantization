@@ -5,14 +5,16 @@ import os
 from collections import defaultdict
 import pandas as pd
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 def train_model(
-    train_dl, val_dl, 
+    train_dl, val_dl,
     model, optimizer, criterion,
     clip_value=1e-2,
     epochs=10, save='checkpoint/origin_training'
 ):
-    
-    model = model.cuda()
+
+    model = model.to(device)
     min_loss = float('inf')
     _step=0
 
@@ -23,7 +25,7 @@ def train_model(
         loss_mean, acc_mean = [], []
         model.train()
         for step, (x, label) in train_bar:
-            x, label = x.cuda(), label.cuda()
+            x, label = x.to(device), label.to(device)
             optimizer.zero_grad()
             y = model(x)
             loss = criterion(y, label)
@@ -38,7 +40,7 @@ def train_model(
             _step +=1
         train_loss = sum(loss_mean) / len(loss_mean)
         train_acc = sum(acc_mean) / len(acc_mean)
-        
+
         metrics_to_save['train_loss'].append(train_loss)
         metrics_to_save['train_acc'].append(train_acc)
 
@@ -47,7 +49,7 @@ def train_model(
         model.eval()
         loss_mean, acc_mean = [], []
         for step, (x, label) in val_bar:
-            x, label = x.cuda(), label.cuda()
+            x, label = x.to(device), label.to(device)
             y = model(x)
             loss = criterion(y, label)
             loss_mean.append(loss.item())
@@ -72,20 +74,20 @@ def train_model(
                             f'train_loss:{train_loss}\n'
                             f'val_loss:{val_loss}\n'
                             f'acc:{val_acc}')
-    
+
     train_logs = pd.DataFrame(metrics_to_save)
     if save:
         train_logs.to_csv(f'{save}/train_logs.csv', index=False)
 
 def test_model(val_dl, model):
-    
-    model = model.cuda()
+
+    model = model.to(device)
     model.eval()
 
     acc = []
     bar = tqdm.tqdm(val_dl)
     for x, label in bar:
-        x, label = x.cuda(), label.cuda()
+        x, label = x.to(device), label.to(device)
         y = model(x)
         acc.extend((y.argmax(dim=1) == label).tolist())
         bar.set_postfix({'acc':sum(acc) / len(acc)})

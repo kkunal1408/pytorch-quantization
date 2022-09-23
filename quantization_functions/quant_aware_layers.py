@@ -135,10 +135,10 @@ class CConvBNReLU2d(nn.Module):
                 self.q_out.quantize_update(x)
                 if self.qat:
                     x = FakeQuantize.apply(x, self.q_out)
-                
+
             if self.relu:
                 x = F.relu(x)
-            
+
             return x
 
     def load_pretrained(self, state_dict):
@@ -180,7 +180,7 @@ class CLinear(nn.Module):
         if not self.if_quantize_forward:
             y = F.linear(x, self.weight, self.bias)
             return y
-            
+
         else:
             self.q_w.quantize_update(self.weight)
             if self.qat:
@@ -204,7 +204,6 @@ class CLinear(nn.Module):
                 self.q_out.quantize_update(y)
                 if self.qat:
                     y = FakeQuantize.apply(y, self.q_out)
-                
             return y
 
     def quantize(self, if_quantize):
