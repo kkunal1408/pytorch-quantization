@@ -13,6 +13,7 @@ import tqdm
 from collections import namedtuple
 import argparse
 import torch
+import time
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
@@ -306,6 +307,7 @@ if single_layer_quantization_model1 == 1:
 
     for layer_no, layer_name in enumerate(model_bits.keys()):
         # if layer_no==four_bit_layer:
+        time.sleep(1)
         model_bits[layer_name] = 4
         print(layer_name)
         c_base_model = quant_aware_resnet_model.CResnet18(
