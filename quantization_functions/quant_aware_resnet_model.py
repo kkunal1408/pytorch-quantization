@@ -57,7 +57,7 @@ class CBasicBlock(nn.Module):
         self.add = CAdd(q_num_bit=q_num_bit_temp, qat=qat)
         self.act2 = nn.ReLU()
 
-    def load_pretrained(self, state_dict):
+    def load_pretrained(self, state_dict, noise_sigma=None):
         self.conv1.load_pretrained(state_dict)
         self.conv2.load_pretrained(state_dict)
         if self.downsample:
@@ -234,10 +234,11 @@ def _resnet_builder(num_class, q_num_bit, block_type, layers, pretrained=True, n
         else:
             with open(pretrained, 'rb') as f:
                 state_dict = torch.load(f, map_location='cpu')
-        model.conv1.load_pretrained(state_dict)
+        print(q_num_bit)
+        model.conv1.load_pretrained(state_dict, q_num_bit)
         for layer in [model.layer1, model.layer2, model.layer3, model.layer4]:
             for block in layer:
-                block.load_pretrained(state_dict)
+                block.load_pretrained(state_dict, q_num_bit)
         model.fc.load_pretrained(state_dict)
         print('remained state dict', state_dict.keys())
     else:
