@@ -108,18 +108,9 @@ base_model.fc = nn.Linear(base_model.fc.in_features,
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD(base_model.parameters(),
                             1e-2, momentum=0.9, weight_decay=1e-5)
-train_loop.train_model(
-    train_dl=train_loader,
-    val_dl=test_loader,
-    model=base_model,
-    optimizer=optimizer,
-    criterion=criterion,
-    clip_value=1e-2,
-    epochs=N_EPOCH, save=f"{SAVE_DIR}/base_model"
-)
 
 base_model = 0
-bit_8_model = 1
+bit_8_model = 0
 bit_7_model = 0
 bit_6_model = 0
 bit_5_model = 0
@@ -133,7 +124,15 @@ model_bits = json.load(open(model_bits_file, 'r'))
 model_bits = model_bits['ResNet18_8_bit']
 
 if base_model == 1:
-
+    train_loop.train_model(
+        train_dl=train_loader,
+        val_dl=test_loader,
+        model=base_model,
+        optimizer=optimizer,
+        criterion=criterion,
+        clip_value=1e-2,
+        epochs=N_EPOCH, save=f"{SAVE_DIR}/base_model"
+    )
     # %%
     base_model = torchvision.models.resnet18(pretrained=False)
     base_model.fc = nn.Linear(
@@ -146,10 +145,10 @@ if base_model == 1:
     train_loop.test_model(test_loader, base_model)
     model_weights_base = torch.load(
         f'{SAVE_DIR}/base_model/model_weights.pt', map_location='cpu')
-    print(f'{SAVE_DIR}/base_model/model_weights.pt resnet base model weights')
-    print(model_weights_base.keys())
-    for k, v in base_model.state_dict().items():
-        print(k)
+    # print(f'{SAVE_DIR}/base_model/model_weights.pt resnet base model weights')
+    # print(model_weights_base.keys())
+    # for k, v in base_model.state_dict().items():
+    #     print(k)
 # %% [markdown]
 # ## Post Training Quantization
 
@@ -306,18 +305,39 @@ if single_layer_quantization_model1 == 1:
     #four_bit_layer =args.layer
 
     for layer_no, layer_name in enumerate(model_bits.keys()):
-        # if layer_no==four_bit_layer:
+        if "add" in layer_name or "downsample" in layer_name or "q_" in layer_name:
+            continue
+        # if not "conv1" == layer_name:
+        #     continue
         time.sleep(1)
+        model_bits = json.load(open(model_bits_file, 'r'))
+        model_bits = model_bits['ResNet18_8_bit']
         model_bits[layer_name] = 4
         print(layer_name)
         c_base_model = quant_aware_resnet_model.CResnet18(
             num_class=10, q_num_bit=model_bits, qat=False, pretrained=f'{SAVE_DIR}/base_model/model_weights.pt')
+        # c_base_model = quant_aware_resnet_model.CResnet18(
+        #     num_class=10, q_num_bit=5, qat=True, pretrained=True)
         c_base_model.quantize(True)
+        # Training Loop
+        criterion = nn.CrossEntropyLoss()
+        optimizer = torch.optim.SGD(c_base_model.parameters(), 1e-2, momentum=0.9, weight_decay=1e-5)
+        train_loop.test_model(test_loader, c_base_model)
+
+        # train_loop.train_model(
+        #     train_dl=train_loader,
+        #     val_dl=test_loader,
+        #     model=c_base_model,
+        #     optimizer=optimizer,
+        #     criterion=criterion,
+        #     clip_value=1e-2,
+        #     epochs=N_EPOCH, save=f"{SAVE_DIR}/qat4bit"
+        # )
         # print("c_base_model quantized")
         # print(c_base_model)
         # Forward pass to have quantized weights
         # print("testing loaded quantized resnet model")
-        train_loop.test_model(train_loader, c_base_model)
+        # train_loop.test_model(train_loader, c_base_model)
         # %%
         # Convert to quantized model
         q_base_model = post_training_quant_model.QResnet18(num_class=10)
@@ -417,3 +437,26 @@ if post_quant_training_mixed_model == 1:
     # %%
     with open(f'{SAVE_DIR}/qat4bit_modified/model_weights_quantized.pt', 'wb') as f:
         torch.save(q_base_model.state_dict(), f)
+
+# rechecking fixed model_layers
+check=0
+if check==1:
+    # Create model with custom quantization layer from the start
+    c_base_model = quant_aware_resnet_model.CResnet18(num_class=10, q_num_bit=5, qat=True, pretrained=True)
+    c_base_model.quantize(True)
+    # Training Loop
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(c_base_model.parameters(), 1e-2, momentum=0.9, weight_decay=1e-5)
+    train_loop.train_model(
+    train_dl=train_loader,
+    val_dl=test_loader,
+    model=c_base_model,
+    optimizer=optimizer,
+    criterion=criterion,
+    clip_value=1e-2,
+    epochs=N_EPOCH, save=f"{SAVE_DIR}/qat5bit"
+    )
+    # Convert to quantized model
+    q_base_model = post_training_quant_model.QResnet18(num_class=10)
+    q_base_model.convert_from(c_base_model)
+    train_loop.test_model(test_loader, q_base_model)

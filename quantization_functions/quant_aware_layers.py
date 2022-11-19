@@ -156,17 +156,17 @@ class CConvBNReLU2d(nn.Module):
                         assert layer.data.shape == state_dict[name].shape
                     except Exception as e:
                         print('!!!', name, layer.data.shape, state_dict[name].shape)
-                if noise_sigma and name.replace(".weight", "") in noise_sigma and noise_sigma[name.replace(
-                        ".weight", "")]!=8:
-                    bit = noise_sigma[name.replace(".weight", "")]
-                    noise_bit = 1/2**(bit+1)
-                    analog_noise = torch.max(
-                        state_dict[name])*(noise_bit**0.5)*torch.randn(state_dict[name].size())
-                    print(
-                        f'adding noise to layer {name} {bit} {noise_bit} {torch.max(state_dict[name])} {torch.mean(analog_noise)} ')
-                    layer.data = state_dict[name] + analog_noise
-                else:
-                    layer.data = state_dict[name]
+                # if noise_sigma and name.replace(".weight", "") in noise_sigma and noise_sigma[name.replace(
+                #         ".weight", "")]!=8:
+                #     bit = noise_sigma[name.replace(".weight", "")]
+                #     noise_bit = 1/2**(bit+1)
+                #     analog_noise = torch.max(
+                #         state_dict[name])*(noise_bit**0.5)*torch.randn(state_dict[name].size())
+                #     print(
+                #         f'adding noise to layer {name} {bit} {noise_bit} {torch.max(state_dict[name])} {torch.mean(analog_noise)} ')
+                #     layer.data = state_dict[name] + analog_noise
+                # else:
+                layer.data = state_dict[name]
                 # print('loaded', name)
                 state_dict.pop(name)
 
