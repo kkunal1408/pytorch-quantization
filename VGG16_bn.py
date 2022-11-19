@@ -135,8 +135,8 @@ eval_only_4_model1 = 0
 post_quant_training_mixed_model = 0
 model_bits_file = f'quantization_functions/model_layers.json'
 num_bit = 4
-# model_bits = json.load(open(model_bits_file, 'r'))
-# model_bits = model_bits['vgg16_8_bit']
+model_bits = json.load(open(model_bits_file, 'r'))
+model_bits = model_bits['vgg16_8_bit']
 
 if base_model == 1:
 
