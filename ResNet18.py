@@ -92,7 +92,7 @@ test_loader = torch.utils.data.DataLoader(
 # # Resnet 18 Models
 
 # %%
-N_EPOCH = 6
+N_EPOCH = 1
 
 # %%
 SAVE_DIR = 'checkpoint/imagenette_resnet18'
@@ -115,8 +115,8 @@ bit_7_model = 0
 bit_6_model = 0
 bit_5_model = 0
 bit_4_model = 0
-single_layer_quantization_model1 = 1
-eval_only_4_model1 = 0
+single_layer_quantization_model1 = 0
+eval_only_4_model1 = 1
 post_quant_training_mixed_model = 0
 model_bits_file = f'quantization_functions/model_layers.json'
 num_bit = 4
@@ -158,7 +158,7 @@ if bit_8_model == 1:
     # # %%
     # Convert base model to a custom quantization layer with the trained weights
     c_base_model = quant_aware_resnet_model.CResnet18(num_class=10, q_num_bit=8, qat=False,
-                                                      pretrained=f'{SAVE_DIR}/base_model/model_weights.pt')
+        pretrained=f'{SAVE_DIR}/base_model/model_weights.pt')
     c_base_model.quantize(True)
 
     # Forward pass to have quantized weights
@@ -186,7 +186,7 @@ if bit_7_model == 1:
     # %%
     # Convert base model to a custom quantization layer with the trained weights
     c_base_model = quant_aware_resnet_model.CResnet18(num_class=10, q_num_bit=7, qat=False,
-                                                      pretrained=f'{SAVE_DIR}/base_model/model_weights.pt')
+        pretrained=f'{SAVE_DIR}/base_model/model_weights.pt')
     c_base_model.quantize(True)
 
     # %%
@@ -241,7 +241,7 @@ if bit_6_model == 1:
     # %%
     # Convert base model to a custom quantization layer with the trained weights
     c_base_model = quant_aware_resnet_model.CResnet18(num_class=10, q_num_bit=5, qat=False,
-                                                      pretrained=f'{SAVE_DIR}/base_model/model_weights.pt')
+        pretrained=f'{SAVE_DIR}/base_model/model_weights.pt')
     c_base_model.quantize(True)
 
     # %%
@@ -269,7 +269,7 @@ if bit_4_model == 1:
     # %%
     # Convert base model to a custom quantization layer with the trained weights
     c_base_model = quant_aware_resnet_model.CResnet18(num_class=10, q_num_bit=4, qat=False,
-                                                      pretrained=f'{SAVE_DIR}/base_model/model_weights.pt')
+        pretrained=f'{SAVE_DIR}/base_model/model_weights.pt')
     c_base_model.quantize(True)
 
     # %%
@@ -367,11 +367,11 @@ if eval_only_4_model1 == 1:
 
     # %%
     # Create model with custom quantization layer from the start
-    print(model_bits)
+    # print(model_bits)
+    model_bits['conv1']=4
     c_base_model = quant_aware_resnet_model.CResnet18(
-        num_class=10, q_num_bit=8, qat=True, pretrained=True)
+        num_class=10, q_num_bit=model_bits, qat=False, pretrained=f'{SAVE_DIR}/base_model/model_weights.pt')
     c_base_model.quantize(True)
-
     # %%
     # Training Loop
     criterion = nn.CrossEntropyLoss()
